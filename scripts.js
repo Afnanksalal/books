@@ -1,23 +1,21 @@
-// Function to load PDF files from the GitHub repository
+// Function to load PDF files using PDFObject
 function loadPdf(pdfFile) {
-  const pdfViewer = document.getElementById('pdf-viewer');
+  const pdfContainer = document.getElementById('pdf-container');
   const loadingIndicator = document.getElementById('loading-indicator');
 
   // Show loading indicator
   loadingIndicator.style.display = 'block';
 
-  pdfViewer.onload = () => {
+  PDFObject.embed(pdfFile, pdfContainer, {
+    pdfOpenParams: { scrollbars: '1', toolbar: '0', statusbar: '0' }
+  }).then(() => {
     // Hide loading indicator when PDF is loaded
     loadingIndicator.style.display = 'none';
-  };
-
-  pdfViewer.onerror = () => {
+  }).catch(() => {
     // Hide loading indicator and show error message
     loadingIndicator.style.display = 'none';
     alert('Failed to load PDF file.');
-  };
-
-  pdfViewer.src = pdfFile;
+  });
 }
 
 // Function to dynamically create buttons
@@ -27,7 +25,9 @@ function createPdfButtons() {
 
   // Hardcoded list of PDF files
   const pdfFiles = [
-    'Dsa.pdf'
+    'Dsa.pdf',
+    'example2.pdf',
+    'example3.pdf'
   ];
 
   pdfFiles.forEach(pdfFile => {
