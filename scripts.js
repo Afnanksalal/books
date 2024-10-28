@@ -27,9 +27,7 @@ function createPdfButtons() {
 
   // Hardcoded list of PDF files
   const pdfFiles = [
-    'example1.pdf',
-    'example2.pdf',
-    'example3.pdf'
+    'Dsa.pdf'
   ];
 
   pdfFiles.forEach(pdfFile => {
