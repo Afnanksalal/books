@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="dropdown">
+      <button class="dropdown-button" onclick="toggleDropdown()" aria-haspopup="true" aria-expanded="false">Choose PDF</button>
+      <div class="dropdown-content" id="dropdown-content" role="menu" aria-labelledby="dropdown-button">
+        <!-- PDF buttons will be added here -->
+      </div>
+    </div>
+
+    <div class="pdf-container">
+      <embed id="pdf-viewer" src="" type="application/pdf">
+      <button class="fullscreen-button" onclick="toggleFullscreen()">Fullscreen</button>
+      <div class="loading-indicator" id="loading-indicator">Loading...</div>
+    </div>
+  </div>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
