@@ -15,6 +15,11 @@
 
     <div class="library-section">
       <div class="controls">
+        <div class="search-bar">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" class="search-input" id="search-input" placeholder="Search PDFs..." aria-label="Search PDFs">
+        </div>
+        </div>
         <div class="dropdown">
           <button class="dropdown-button" onclick="toggleDropdown()" aria-haspopup="true" aria-expanded="false">
             <span>Select a PDF</span>
@@ -23,15 +28,8 @@
           <div class="dropdown-content" id="dropdown-content" role="menu">
             <div class="loading-files">Loading files...</div>
             <div class="no-results">No PDFs match your search</div>
-            <!-- PDF list will be populated here -->
           </div>
         </div>
-
-        <div class="search-bar">
-          <i class="fas fa-search search-icon"></i>
-          <input type="text" class="search-input" id="search-input" placeholder="Search PDFs..." aria-label="Search PDFs">
-        </div>
-      </div>
     </div>
 
     <div class="pdf-container-wrapper" id="pdf-container-wrapper">
