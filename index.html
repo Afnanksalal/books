@@ -5,7 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Library Viewer</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.2.8/pdfobject.min.js"></script>
+  <!-- PDF.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs" type="module"></script>
+  <script>
+      // Set the workerSrc for PDF.js
+      // You might need to adjust the version number based on the pdf.min.mjs version
+      // Ensure the worker script is accessible from your domain
+      var pdfjsLib = window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+  </script>
+
   <style>
     :root {
       --primary-color: #7c4dff;
@@ -174,16 +183,26 @@
       background-color: var(--card-color);
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 4px 8px var(--shadow-color);
+      box-shadow: 0 4 philanthropic 8px var(--shadow-color);
       border: 1px solid var(--border-color);
       height: calc(100vh - 150px);
       min-height: 500px;
+      display: flex; /* Use flex to manage welcome/pdf content */
+      justify-content: center;
+      align-items: center;
     }
 
-    .pdf-container {
-      width: 100%;
-      height: 100%;
+    #pdf-viewer {
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Enable scrolling for the PDF content */
     }
+
+    #pdf-viewer canvas {
+        margin: 0 auto; /* Center canvas horizontally */
+        display: block; /* Prevent extra space below canvas */
+    }
+
 
     .loading-indicator {
       display: none;
@@ -194,13 +213,12 @@
       height: 100%;
       background-color: rgba(18, 18, 18, 0.8);
       z-index: 10;
+      display: flex; /* Use flex to center spinner */
+      justify-content: center;
+      align-items: center;
     }
 
     .spinner {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       width: 40px;
       height: 40px;
       border: 4px solid rgba(124, 77, 255, 0.3);
@@ -210,8 +228,8 @@
     }
 
     @keyframes spin {
-      0% { transform: translate(-50%, -50%) rotate(0deg); }
-      100% { transform: translate(-50%, -50%) rotate(360deg); }
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .welcome-screen {
@@ -222,6 +240,7 @@
       height: 100%;
       padding: 1rem;
       text-align: center;
+      color: #aaa; /* Adjust color for welcome text */
     }
 
     .welcome-icon {
@@ -233,6 +252,7 @@
     .welcome-title {
       font-size: 1.5rem;
       margin-bottom: 0.5rem;
+      color: var(--text-color); /* Ensure title is visible */
     }
 
     .welcome-subtitle {
@@ -302,6 +322,7 @@
       border-radius: 8px;
       text-align: center;
       max-width: 80%;
+      z-index: 15; /* Ensure error is above loading */
     }
 
     .no-results {
@@ -315,11 +336,11 @@
       .controls {
         flex-direction: column;
       }
-      
+
       .search-bar, .dropdown {
         min-width: 100%;
       }
-      
+
       .dropdown-content {
         position: fixed;
         top: auto;
@@ -327,7 +348,7 @@
         right: 1rem;
         width: calc(100% - 2rem);
       }
-      
+
       .pdf-container-wrapper {
         height: calc(100vh - 200px);
       }
@@ -345,7 +366,7 @@
     <header>
       <div class="app-title">PDF Library Viewer</div>
     </header>
-    
+
     <div class="library-section">
       <div class="controls">
         <div class="dropdown">
@@ -359,80 +380,84 @@
             <!-- PDF list will be populated here -->
           </div>
         </div>
-        
+
         <div class="search-bar">
           <i class="fas fa-search search-icon"></i>
           <input type="text" class="search-input" id="search-input" placeholder="Search PDFs..." aria-label="Search PDFs">
         </div>
       </div>
     </div>
-    
-    <div class="pdf-container-wrapper">
-      <div class="pdf-container" id="pdf-container">
-        <div class="welcome-screen">
+
+    <div class="pdf-container-wrapper" id="pdf-container-wrapper">
+        <!-- This will contain the PDF.js viewer or the welcome screen -->
+        <div class="welcome-screen" id="welcome-screen">
           <i class="fas fa-file-pdf welcome-icon"></i>
           <h2 class="welcome-title">Welcome to PDF Library</h2>
           <p class="welcome-subtitle">Select a PDF from the dropdown menu to start reading</p>
         </div>
-      </div>
-      
-      <div class="loading-indicator" id="loading-indicator">
-        <div class="spinner"></div>
-      </div>
-      
-      <div class="error-message" id="error-message">
-        Failed to load PDF. Please try again later.
-      </div>
-      
-      <div class="controls-bar" id="controls-bar" style="display: none;">
-        <div class="pdf-name" id="pdf-name"></div>
-        <div class="action-buttons">
-          <button class="action-button" id="fullscreen-button" title="Toggle Fullscreen">
-            <i class="fas fa-expand"></i>
-          </button>
-          <button class="action-button" id="download-button" title="Download PDF">
-            <i class="fas fa-download"></i>
-          </button>
-        </div>
+         <div id="pdf-viewer"></div> <!-- Container for PDF.js rendering -->
+    </div>
+
+    <div class="loading-indicator" id="loading-indicator">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="error-message" id="error-message">
+      Failed to load PDF. Please try again later.
+    </div>
+
+    <div class="controls-bar" id="controls-bar" style="display: none;">
+      <div class="pdf-name" id="pdf-name"></div>
+      <div class="action-buttons">
+        <button class="action-button" id="fullscreen-button" title="Toggle Fullscreen">
+          <i class="fas fa-expand"></i>
+        </button>
+        <button class="action-button" id="download-button" title="Download PDF">
+          <i class="fas fa-download"></i>
+        </button>
       </div>
     </div>
   </div>
 
-  <script>
+  <script type="module">
     // GitHub repository information
     const githubRepo = 'https://raw.githubusercontent.com/Afnanksalal/books/main/books/';
     const githubApiUrl = 'https://api.github.com/repos/Afnanksalal/books/contents/books';
-    
+
     // PDF files list
     let pdfFiles = [];
     let filteredPdfFiles = [];
     let currentPdf = null;
-    
+    let pdfDoc = null; // To store the loaded PDF document object
+
     // DOM Elements
     const dropdownContent = document.getElementById('dropdown-content');
     const searchInput = document.getElementById('search-input');
     const loadingIndicator = document.getElementById('loading-indicator');
-    const pdfContainer = document.getElementById('pdf-container');
+    const pdfViewer = document.getElementById('pdf-viewer'); // The PDF.js container
     const controlsBar = document.getElementById('controls-bar');
     const pdfNameDisplay = document.getElementById('pdf-name');
     const errorMessage = document.getElementById('error-message');
     const noResultsMessage = document.querySelector('.no-results');
     const loadingFilesMessage = document.querySelector('.loading-files');
-    
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const pdfContainerWrapper = document.getElementById('pdf-container-wrapper');
+
+
     // Fetch PDF files from GitHub repository
     async function fetchPdfFiles() {
       try {
         loadingFilesMessage.style.display = 'block';
         noResultsMessage.style.display = 'none';
-        
+
         const response = await fetch(githubApiUrl);
         if (!response.ok) {
-          throw new Error('Failed to fetch repository contents');
+          throw new Error(`Failed to fetch repository contents: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         pdfFiles = data
-          .filter(file => file.name.toLowerCase().endsWith('.pdf'))
+          .filter(file => file.type === 'file' && file.name.toLowerCase().endsWith('.pdf'))
           .map(file => ({
             name: file.name,
             path: file.path,
@@ -440,29 +465,30 @@
             displayName: file.name.replace('.pdf', '')
           }))
           .sort((a, b) => a.displayName.localeCompare(b.displayName));
-        
+
         filteredPdfFiles = [...pdfFiles];
         createPdfButtons(pdfFiles);
         loadingFilesMessage.style.display = 'none';
       } catch (error) {
         console.error('Error fetching PDF files:', error);
         loadingFilesMessage.textContent = 'Failed to load files. Please try again later.';
+        loadingFilesMessage.style.color = 'red'; // Indicate error visually
       }
     }
-    
+
     // Create buttons for each PDF file
     function createPdfButtons(files) {
       // Clear existing content except for loading and no-results messages
       const existingButtons = dropdownContent.querySelectorAll('a');
       existingButtons.forEach(button => button.remove());
-      
+
       if (files.length === 0) {
         noResultsMessage.style.display = 'block';
         return;
       }
-      
+
       noResultsMessage.style.display = 'none';
-      
+
       files.forEach(file => {
         const linkElement = document.createElement('a');
         linkElement.href = '#';
@@ -477,69 +503,101 @@
         dropdownContent.appendChild(linkElement);
       });
     }
-    
-    // Load PDF file
-    function loadPdf(pdfUrl, fileName) {
+
+    // Load PDF file using PDF.js
+    async function loadPdf(pdfUrl, fileName) {
       // Show loading indicator
-      loadingIndicator.style.display = 'flex';
-      errorMessage.style.display = 'none';
-      
-      // Remove welcome screen if present
-      const welcomeScreen = document.querySelector('.welcome-screen');
-      if (welcomeScreen) {
-        welcomeScreen.remove();
-      }
-      
+      showLoading();
+      hideError();
+
+      // Hide welcome screen
+      welcomeScreen.style.display = 'none';
+
+      // Clear previous PDF content
+      pdfViewer.innerHTML = '';
+      pdfDoc = null; // Reset pdfDoc
+
       // Update current PDF
       currentPdf = { url: pdfUrl, name: fileName };
-      
+
       // Update PDF name in controls bar
       pdfNameDisplay.textContent = fileName;
       controlsBar.style.display = 'flex';
-      
+
       // Update download button
       const downloadButton = document.getElementById('download-button');
       downloadButton.onclick = () => {
         const a = document.createElement('a');
         a.href = pdfUrl;
         a.download = fileName;
-        a.target = '_blank';
+        a.target = '_blank'; // Open in a new tab for direct download
         a.click();
       };
-      
-      // Embed PDF using PDFObject
-      PDFObject.embed(pdfUrl, pdfContainer, {
-        pdfOpenParams: { 
-          scrollbars: '1', 
-          toolbar: '1', 
-          statusbar: '1',
-          navpanes: '1'
+
+      try {
+        // Asynchronously load the PDF
+        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        pdfDoc = await loadingTask.promise;
+
+        // Render each page
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+          const page = await pdfDoc.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.5 }); // Adjust scale as needed
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          canvas.style.display = 'block'; // Ensure canvas is a block element for centering
+
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport,
+          };
+          await page.render(renderContext).promise;
+
+          pdfViewer.appendChild(canvas);
         }
-      }).then(success => {
-        loadingIndicator.style.display = 'none';
-        if (!success) {
-          errorMessage.style.display = 'block';
-        }
-      }).catch(error => {
+
+        hideLoading();
+      } catch (error) {
         console.error('Error loading PDF:', error);
-        loadingIndicator.style.display = 'none';
-        errorMessage.style.display = 'block';
-      });
+        hideLoading();
+        showError('Failed to load PDF. Please try again later.');
+      }
     }
-    
+
+    // Helper functions for loading and error states
+    function showLoading() {
+      loadingIndicator.style.display = 'flex';
+    }
+
+    function hideLoading() {
+      loadingIndicator.style.display = 'none';
+    }
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+
+    function hideError() {
+      errorMessage.style.display = 'none';
+    }
+
+
     // Toggle dropdown visibility
     function toggleDropdown() {
       const dropdownButton = document.querySelector('.dropdown-button');
       const isExpanded = dropdownContent.style.display === 'block';
-      
+
       dropdownContent.style.display = isExpanded ? 'none' : 'block';
       dropdownButton.setAttribute('aria-expanded', !isExpanded);
     }
-    
+
     // Toggle fullscreen
     function toggleFullscreen() {
-      const elem = document.querySelector('.pdf-container-wrapper');
-      
+      const elem = pdfContainerWrapper; // Target the wrapper for fullscreen
+
       if (!document.fullscreenElement) {
         elem.requestFullscreen().catch(err => {
           console.error(`Error attempting to enable fullscreen: ${err.message}`);
@@ -548,48 +606,48 @@
         document.exitFullscreen();
       }
     }
-    
+
     // Search functionality
     function handleSearch() {
       const searchTerm = searchInput.value.toLowerCase();
-      
+
       if (searchTerm === '') {
         filteredPdfFiles = [...pdfFiles];
       } else {
-        filteredPdfFiles = pdfFiles.filter(file => 
+        filteredPdfFiles = pdfFiles.filter(file =>
           file.displayName.toLowerCase().includes(searchTerm)
         );
       }
-      
+
       createPdfButtons(filteredPdfFiles);
     }
-    
+
     // Event listeners
     document.addEventListener('DOMContentLoaded', function() {
       // Fetch PDFs when page loads
       fetchPdfFiles();
-      
+
       // Set up search input
       searchInput.addEventListener('input', handleSearch);
-      
+
       // Set up fullscreen button
       const fullscreenButton = document.getElementById('fullscreen-button');
       fullscreenButton.addEventListener('click', toggleFullscreen);
-      
+
       // Close dropdown when clicking outside
       document.addEventListener('click', function(event) {
         const dropdown = document.querySelector('.dropdown');
         const isClickInside = dropdown.contains(event.target);
-        
+
         if (!isClickInside && dropdownContent.style.display === 'block') {
           toggleDropdown();
         }
       });
-      
+
       // Enable keyboard navigation
       document.addEventListener('keydown', function(event) {
         const dropdownButton = document.querySelector('.dropdown-button');
-        
+
         if (event.key === 'Escape') {
           if (dropdownContent.style.display === 'block') {
             toggleDropdown();
@@ -597,12 +655,12 @@
             document.exitFullscreen();
           }
         }
-        
+
         if (event.key === 'Enter' && document.activeElement === dropdownButton) {
           toggleDropdown();
         }
       });
-      
+
       // Handle fullscreen change
       document.addEventListener('fullscreenchange', function() {
         const fullscreenButton = document.getElementById('fullscreen-button');
